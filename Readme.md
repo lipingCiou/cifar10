@@ -65,7 +65,23 @@ MLP 依序計算每層的輸出：
 
 當所有批次都處理完後，**這一輪（Epoch）就結束**，然後進入下一輪。
 
-### 2.7 訓練停止條件
+### 2.7 反向傳播的數學推導（Chain Rule）
+
+反向傳播的核心在於**鏈式法則（Chain Rule）**，它用來計算 **Loss 對每層權重的影響**。
+
+假設我們的損失函數是 \( L \)，並且輸出層的預測值由隱藏層的輸出 \( h_2 \) 決定，隱藏層又由更前一層決定，我們可以透過鏈式法則來計算梯度：
+
+$$
+rac{\partial L}{\partial W_2} = rac{\partial L}{\partial y} \cdot rac{\partial y}{\partial h_2} \cdot rac{\partial h_2}{\partial W_2}
+$$
+
+$$
+rac{\partial L}{\partial W_1} = rac{\partial L}{\partial y} \cdot rac{\partial y}{\partial h_2} \cdot rac{\partial h_2}{\partial h_1} \cdot rac{\partial h_1}{\partial W_1}
+$$
+
+這表示 **每一層的梯度是前面所有層的偏導數相乘**
+
+### 2.8 訓練停止條件
 
 訓練會持續進行，直到符合以下條件之一：
 1. **達到最大 Epoch 數**（例如 10 Epochs）。
