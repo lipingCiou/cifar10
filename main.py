@@ -4,11 +4,15 @@ import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
+from torchvision.transforms import AutoAugment, AutoAugmentPolicy
+
+
 
 # ✅ **1. 設定數據增強（Data Augmentation）**
 transform_train = transforms.Compose([
     transforms.RandomCrop(32, padding=4),  # 隨機裁剪
     transforms.RandomHorizontalFlip(),  # 隨機水平翻轉
+    transforms.AutoAugment(),
     transforms.ToTensor(),
     transforms.Normalize((0.5,), (0.5,))  # 標準化到 [-1, 1]
 ])
@@ -44,38 +48,55 @@ class CNN(nn.Module):
             nn.Conv2d(32, 64, kernel_size=3, padding=1),
             nn.BatchNorm2d(64),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),  # 池化: (16, 16) -> (8, 8)
+
 
             # 第三層卷積: 3x3, 128 個濾波器 + BN + ReLU + 池化
             nn.Conv2d(64, 128, kernel_size=3, padding=1),
             nn.BatchNorm2d(128),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),  # 池化: (8, 8) -> (4, 4)
+            nn.MaxPool2d(kernel_size=2, stride=2),  #   # 池化: (16, 16) -> (8, 8)
 
             # 第四層卷積: 3x3, 256 個濾波器 + BN + ReLU + 池化
             nn.Conv2d(128, 256, kernel_size=3, padding=1),
             nn.BatchNorm2d(256),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),  # 池化: (4, 4) -> (2, 2)
+
 
             # 第五層卷積: 3x3, 512 個濾波器 + BN + ReLU + 池化
             nn.Conv2d(256, 512, kernel_size=3, padding=1),
             nn.BatchNorm2d(512),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2)  # 池化: (2, 2) -> (1, 1)
+            nn.MaxPool2d(kernel_size=2, stride=2),  # 池化: (4, 4) -> (2, 2)
+
+
+            # 第六層卷積: 3x3, 1024 個濾波器 + BN + ReLU + 池化
+            nn.Conv2d(512, 1024, kernel_size=3, padding=1),
+            nn.BatchNorm2d(1024),
+            nn.ReLU(),
+
+            # 第七層卷積: 3x3, 512 個濾波器 + BN + ReLU + 池化
+            nn.Conv2d(1024, 2048, kernel_size=3, padding=1),
+            nn.BatchNorm2d(2048),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),  # 池化: (2, 2) -> (1, 1)
+
         )
 
-        # 全連接層: 512 -> 512
-        self.fc1 = nn.Linear(512, 512)
+        # 全連接層: 8192 -> 512
+        self.fc1 = nn.Linear(8192, 512)
         self.bn1 = nn.BatchNorm1d(512)  # 1D 批次歸一化
         self.dropout = nn.Dropout(0.5)
+
+
 
         # 最後輸出層: 512 -> 10
         self.fc2 = nn.Linear(512, 10)
 
     def forward(self, x):
         x = self.conv_layers(x)
-        x = x.view(x.size(0), -1)  # Flatten
+
+        x = x.view(x.shape[0], -1)  # Flatten
+
         x = self.fc1(x)
         x = self.bn1(x)
         x = nn.ReLU()(x)
@@ -89,10 +110,10 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = CNN().to(device)
 
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-5)  # L2 正則化 (weight_decay)
+optimizer = optim.AdamW(model.parameters(), lr=0.001, weight_decay=1e-5)  # L2 正則化 (weight_decay)
 
 # ✅ **4. 訓練模型**
-num_epochs = 20
+num_epochs = 50
 
 for epoch in range(num_epochs):
     model.train()
